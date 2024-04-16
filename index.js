@@ -8,8 +8,18 @@ const bcrypt = require('bcryptjs');
 const app = express();
 const port = process.env.PORT || 5000;
 
+// middleware 
 app.use(cors());
 app.use(express.json());
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  return res.status(statusCode).json({
+    success: false,
+    statusCode,
+    message
+  })
+});
 
 const uri = `mongodb+srv://${process.env.MG_USER}:${process.env.MG_PASS}@swift-sell-rent.eecu0il.mongodb.net/?retryWrites=true&w=majority&appName=swift-sell-rent`;
 
@@ -20,7 +30,7 @@ const clientOptions = {
 async function run() {
   try {
     // create Users
-    app.post("/signUp", async (req, res) => {
+    app.post("/signUp", async (req, res, next) => {
       const { username, email, password } = req.body;
       const hashedPassword =  bcrypt.hashSync(password, 10)
       const newUser = new User({ username, email, password: hashedPassword });
@@ -29,7 +39,7 @@ async function run() {
         res.status(201).json({ message: "User created successfully!" });
       }
       catch(error){
-        res.status(500).json(error.message);
+        next(error);
       }
     });
 
